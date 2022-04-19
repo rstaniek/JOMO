@@ -62,5 +62,6 @@ dependencies {
     implementation "org.androidannotations:androidannotations-api:4.8.0"
 
     implementation 'com.google.firebase:firebase-analytics-ktx'
+    implementation 'com.google.firebase:firebase-firestore-ktx'
 
 }
