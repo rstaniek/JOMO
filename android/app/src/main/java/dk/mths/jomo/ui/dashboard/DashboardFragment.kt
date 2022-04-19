@@ -9,9 +9,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.switchmaterial.SwitchMaterial
-import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
 import dk.mths.jomo.databinding.FragmentDashboardBinding
+import dk.mths.jomo.service.FireLog
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -22,8 +21,6 @@ class DashboardFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
-
-    private val db = Firebase.firestore
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -43,9 +40,6 @@ class DashboardFragment : Fragment() {
             } else {
                 handleOnGrayscaleDeactivated()
             }
-
-            val logMessage = composeGrayscaleOpLogMsg(switchControl.isChecked)
-            db.collection("test").add(logMessage)
         }
         return root
     }
@@ -53,11 +47,13 @@ class DashboardFragment : Fragment() {
     private fun handleOnGrayscaleActivated() {
         writeSetting("accessibility_display_daltonizer_enabled", "1")
         writeSetting("accessibility_display_daltonizer", "0")
+        FireLog().withContext("daltonizer", "true").sendLog("daltonizer")
     }
 
     private fun handleOnGrayscaleDeactivated() {
         writeSetting("accessibility_display_daltonizer_enabled", "0")
         writeSetting("accessibility_display_daltonizer", "-1")
+        FireLog().withContext("daltonizer", "false").sendLog("daltonizer")
     }
 
     @SuppressLint("HardwareIds")

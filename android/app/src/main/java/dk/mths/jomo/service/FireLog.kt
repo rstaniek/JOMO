@@ -1,0 +1,46 @@
+package dk.mths.jomo.service
+
+import android.util.Log
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.installations.FirebaseInstallations
+import com.google.firebase.ktx.Firebase
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAccessor
+
+open class FireLog {
+    private val userIdKey = "uid"
+    private val timestampKey = "timestamp"
+    private val firebaseLogTag = "FirebaseLog"
+    private val tagKey = "tag"
+
+    private val params: HashMap<String, Any> = hashMapOf()
+
+    fun withContext(key: String, value: Any): FireLog {
+        params[key] = value
+        return this
+    }
+
+    fun withTimestamp(temporal: TemporalAccessor): FireLog {
+        params[timestampKey] = DateTimeFormatter.ISO_INSTANT.format(temporal)
+        return this
+    }
+
+    fun sendLog(tag: String) {
+        params[userIdKey] = FirebaseInstallations.getInstance().id.result
+        if(!params.containsKey(timestampKey)){
+            params[timestampKey] = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
+        }
+        params[tagKey] = tag
+
+        Firebase.firestore
+            .collection("logs")
+            .add(params)
+            .addOnSuccessListener { documentReference ->
+                Log.d(firebaseLogTag, "DocumentSnapshot added with ID: ${documentReference.id}")
+            }
+            .addOnFailureListener { e ->
+                Log.wtf(firebaseLogTag, "Error adding document", e)
+            }
+    }
+}
