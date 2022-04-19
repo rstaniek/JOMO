@@ -27,6 +27,7 @@ package dk.mths.jomo.utils;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -269,10 +270,7 @@ public class SelfExpiringHashMap<K, V> implements Map<K, V> {
                 return false;
             }
             final ExpiringKey<K> other = (ExpiringKey<K>) obj;
-            if (this.key != other.key && (this.key == null || !this.key.equals(other.key))) {
-                return false;
-            }
-            return true;
+            return Objects.equals(this.key, other.key);
         }
 
         /**

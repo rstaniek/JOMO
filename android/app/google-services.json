@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "855230497571",
+    "project_id": "jomo-df658",
+    "storage_bucket": "jomo-df658.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:855230497571:android:be407fe9d6c3d4f02ec296",
+        "android_client_info": {
+          "package_name": "dk.mths.jomo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "855230497571-lreikipjd92hop7j1h57ln6ll5p5s1vn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcGj5qt5Nqv982bCKtR1RTai5cgX-rZQ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "855230497571-lreikipjd92hop7j1h57ln6ll5p5s1vn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
