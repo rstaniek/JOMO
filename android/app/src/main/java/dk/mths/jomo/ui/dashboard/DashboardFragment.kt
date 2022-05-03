@@ -10,7 +10,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.switchmaterial.SwitchMaterial
 import dk.mths.jomo.databinding.FragmentDashboardBinding
+import dk.mths.jomo.service.DaltonizerService
 import dk.mths.jomo.service.FireLog
+import dk.mths.jomo.service.IJomoTrigger
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 
@@ -21,6 +23,8 @@ class DashboardFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
+
+    private val jomoTrigger: IJomoTrigger = DaltonizerService(requireActivity().contentResolver)
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -36,41 +40,16 @@ class DashboardFragment : Fragment() {
         val switchControl: SwitchMaterial = binding.switch1
         switchControl.setOnClickListener {
             if (switchControl.isChecked){
-                handleOnGrayscaleActivated()
+                jomoTrigger.enable()
             } else {
-                handleOnGrayscaleDeactivated()
+                jomoTrigger.disable()
             }
         }
         return root
     }
 
-    private fun handleOnGrayscaleActivated() {
-        writeSetting("accessibility_display_daltonizer_enabled", "1")
-        writeSetting("accessibility_display_daltonizer", "0")
-        FireLog().withContext("daltonizer", "true").sendLog("daltonizer")
-    }
-
-    private fun handleOnGrayscaleDeactivated() {
-        writeSetting("accessibility_display_daltonizer_enabled", "0")
-        writeSetting("accessibility_display_daltonizer", "-1")
-        FireLog().withContext("daltonizer", "false").sendLog("daltonizer")
-    }
-
-    @SuppressLint("HardwareIds")
-    private fun composeGrayscaleOpLogMsg(enabled: Boolean): HashMap<String, String> {
-        return hashMapOf(
-            "daltonizer" to enabled.toString(),
-            "timestamp" to DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
-            "uid" to Settings.Secure.getString(requireActivity().contentResolver, Settings.Secure.ANDROID_ID)
-        )
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    private fun writeSetting(name: String, value: String){
-        Settings.Secure.putString(requireActivity().contentResolver, name, value)
     }
 }

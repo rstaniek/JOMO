@@ -4,6 +4,7 @@ import android.util.Log
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.installations.FirebaseInstallations
 import com.google.firebase.ktx.Firebase
+import java.lang.Exception
 import java.time.Instant
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
@@ -27,10 +28,7 @@ open class FireLog {
     }
 
     fun sendLog(tag: String) {
-        params[userIdKey] = FirebaseInstallations.getInstance().id.result
-        if(!params.containsKey(timestampKey)){
-            params[timestampKey] = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
-        }
+        injectTrackingData()
         params[tagKey] = tag
 
         Firebase.firestore
@@ -42,5 +40,29 @@ open class FireLog {
             .addOnFailureListener { e ->
                 Log.wtf(firebaseLogTag, "Error adding document", e)
             }
+    }
+
+    fun sendError(e: Exception) {
+        injectTrackingData()
+        params[tagKey] = "ERROR"
+        params["error_message"] = e.localizedMessage as Any
+        params["stacktrace"] = e.stackTraceToString()
+
+        Firebase.firestore
+            .collection("errors")
+            .add(params)
+            .addOnSuccessListener { documentReference ->
+                Log.d(firebaseLogTag, "DocumentSnapshot added with ID: ${documentReference.id}")
+            }
+            .addOnFailureListener { e ->
+                Log.wtf(firebaseLogTag, "Error adding document", e)
+            }
+    }
+
+    private fun injectTrackingData(){
+        params[userIdKey] = FirebaseInstallations.getInstance().id.result
+        if(!params.containsKey(timestampKey)){
+            params[timestampKey] = DateTimeFormatter.ISO_INSTANT.format(Instant.now())
+        }
     }
 }
