@@ -43,7 +43,7 @@ public class AppsAdapter extends ArrayAdapter<App> {
         usage_duration_tv.setText(usageStats.usageDuration);
         usage_perc_tv.setText(usageStats.usagePercentage + "%");
         icon_img.setImageDrawable(usageStats.appIcon);
-        progressBar.setProgress(usageStats.usagePercentage);
+        progressBar.setProgress(usageStats.percentageOfLongestRunning);
 
         // Return the completed view to render on screen
         return convertView;

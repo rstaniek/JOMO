@@ -36,6 +36,7 @@ class HomeFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
+    private val HistoryInDays = 7
     lateinit var enableBtn: Button
     lateinit var showBtn: Button
     lateinit var permissionDescriptionTv: TextView
@@ -59,6 +60,8 @@ class HomeFragment : Fragment() {
         usageTv = binding.usageTv
         appsList = binding.appsList
 
+        usageTv.text = "Your Apps Usage For Last $HistoryInDays days"
+
         if (checksageStatsPermission()) {
             showHideWithPermission()
             showBtn.setOnClickListener { view: View? -> showUsageStats() }
@@ -79,7 +82,7 @@ class HomeFragment : Fragment() {
             activity?.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         var queryUsageStats: List<UsageStats> = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY,
-            System.currentTimeMillis() - 1000 * 3600 * 24,
+            System.currentTimeMillis() - 1000 * 3600 * 24 * HistoryInDays,
             System.currentTimeMillis()
         )
         queryUsageStats = queryUsageStats.filter { it.totalTimeInForeground > 0 }
@@ -113,6 +116,8 @@ class HomeFragment : Fragment() {
         val totalTime = usageStatsList.stream().map { obj: UsageStats -> obj.totalTimeInForeground }
             .mapToLong { obj: Long -> obj }.sum()
 
+        val longestAppRunTime = usageStatsList.sortedWith(compareBy { it.totalTimeInForeground }).last().totalTimeInForeground
+
         //fill the appsList
         for (usageStats in usageStatsList) {
             try {
@@ -134,8 +139,9 @@ class HomeFragment : Fragment() {
 
                 val usageDuration: String = getDurationBreakdown(usageStats.totalTimeInForeground)
                 val usagePercentage = (usageStats.totalTimeInForeground * 100 / totalTime).toInt()
+                val percentageOfLongestRunningApp = (usageStats.totalTimeInForeground * 100 / longestAppRunTime).toInt()
 
-                val usageStatDTO = App(icon, appName, usagePercentage, usageDuration)
+                val usageStatDTO = App(icon, appName, usagePercentage, percentageOfLongestRunningApp, usageDuration)
                 appsList.add(usageStatDTO)
             } catch (e: PackageManager.NameNotFoundException) {
                 e.printStackTrace();
