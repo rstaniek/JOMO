@@ -1,6 +1,8 @@
 package dk.mths.jomo.ui.dashboard
 
-import android.annotation.SuppressLint
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.LayoutInflater
@@ -10,11 +12,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.switchmaterial.SwitchMaterial
 import dk.mths.jomo.databinding.FragmentDashboardBinding
+import dk.mths.jomo.service.BrightnessSettingsService
 import dk.mths.jomo.service.DaltonizerService
-import dk.mths.jomo.service.FireLog
 import dk.mths.jomo.service.IJomoTrigger
-import java.time.Instant
-import java.time.format.DateTimeFormatter
+
 
 class DashboardFragment : Fragment() {
 
@@ -24,7 +25,8 @@ class DashboardFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
-    lateinit var jomoTrigger: IJomoTrigger
+    lateinit var MonoChromaticService: IJomoTrigger
+    lateinit var BrightnessService : IJomoTrigger
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -37,18 +39,41 @@ class DashboardFragment : Fragment() {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        jomoTrigger = DaltonizerService(requireActivity().contentResolver)
+        changeWriteSettingsPermission()
+        MonoChromaticService = DaltonizerService(requireContext().contentResolver)
+        BrightnessService = BrightnessSettingsService(requireContext().contentResolver)
 
         val switchControl: SwitchMaterial = binding.switch1
+        val switchControl2: SwitchMaterial = binding.switch2
         switchControl.setOnClickListener {
             if (switchControl.isChecked){
-                jomoTrigger.enable()
+                MonoChromaticService.enable()
             } else {
-                jomoTrigger.disable()
+                MonoChromaticService.disable()
             }
         }
+
+        switchControl2.setOnClickListener {
+            if (switchControl2.isChecked){
+                BrightnessService.enable()
+            } else {
+                BrightnessService.disable()
+            }
+        }
+
         return root
     }
+
+    private fun changeWriteSettingsPermission() {
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            val canWriteSettings = Settings.System.canWrite(requireContext())
+            if (!canWriteSettings) {
+                val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+                startActivity(intent)
+            }
+        }
+    }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

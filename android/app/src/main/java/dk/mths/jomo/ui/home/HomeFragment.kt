@@ -1,5 +1,6 @@
 package dk.mths.jomo.ui.home
 
+import android.Manifest
 import android.app.AppOpsManager
 import android.app.AppOpsManager.MODE_ALLOWED
 import android.app.AppOpsManager.OPSTR_GET_USAGE_STATS
@@ -11,6 +12,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Process
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
@@ -25,7 +27,6 @@ import dk.mths.jomo.R
 import dk.mths.jomo.databinding.FragmentHomeBinding
 import dk.mths.jomo.utils.App
 import dk.mths.jomo.utils.AppsAdapter
-import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -62,7 +63,7 @@ class HomeFragment : Fragment() {
 
         usageTv.text = "Your Apps Usage For Last $HistoryInDays days"
 
-        if (checksageStatsPermission()) {
+        if (checkUsageStatsPermission()) {
             showHideWithPermission()
             showBtn.setOnClickListener { view: View? -> showUsageStats() }
         } else {
@@ -100,26 +101,19 @@ class HomeFragment : Fragment() {
     private fun showAppsUsage(mySortedMap: Map<String, UsageStats>) {
         //public void showAppsUsage(List<UsageStats> usageStatsList) {
         var appsList: ArrayList<App> = ArrayList()
-        val usageStatsList: List<UsageStats> = ArrayList(mySortedMap.values)
+        var usageStatsList: List<UsageStats> = ArrayList(mySortedMap.values)
 
         // sort the applications by time spent in foreground
-        Collections.sort(
-            usageStatsList
-        ) { z1: UsageStats, z2: UsageStats ->
-            java.lang.Long.compare(
-                z1.totalTimeInForeground,
-                z2.totalTimeInForeground
-            )
-        }
+        var sortedList = usageStatsList.sortedByDescending{ it.totalTimeInForeground }
 
         // get total time of apps usage to calculate the usagePercentage for each app
-        val totalTime = usageStatsList.stream().map { obj: UsageStats -> obj.totalTimeInForeground }
+        val totalTime = sortedList.stream().map { obj: UsageStats -> obj.totalTimeInForeground }
             .mapToLong { obj: Long -> obj }.sum()
 
-        val longestAppRunTime = usageStatsList.sortedWith(compareBy { it.totalTimeInForeground }).last().totalTimeInForeground
+        val longestAppRunTime = sortedList.maxOf{ it.totalTimeInForeground }
 
         //fill the appsList
-        for (usageStats in usageStatsList) {
+        for (usageStats in sortedList) {
             try {
                 val packageName = usageStats.packageName
                 var icon: Drawable? = getDrawable(requireActivity(), R.drawable.no_image)
@@ -147,9 +141,6 @@ class HomeFragment : Fragment() {
                 e.printStackTrace();
             }
         }
-
-        // reverse the list to get most usage first
-        appsList.reverse()
 
         // build the adapter
         val adapter = AppsAdapter(requireContext(), appsList)
@@ -228,15 +219,18 @@ class HomeFragment : Fragment() {
         appsList.visibility = View.VISIBLE
     }
 
-    private fun checksageStatsPermission(): Boolean {
-        var appOpsManager: AppOpsManager? = null
-        var mode: Int = 0
-        appOpsManager = activity?.getSystemService(Context.APP_OPS_SERVICE)!! as AppOpsManager
-        mode = appOpsManager.checkOpNoThrow(
+    private fun checkUsageStatsPermission(): Boolean {
+        val appOps = requireActivity()
+            .getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+        val mode: Int = appOps.checkOpNoThrow(
             OPSTR_GET_USAGE_STATS,
-            android.os.Process.myUid(), activity?.packageName.toString()
-        );
-        return mode == MODE_ALLOWED
+            Process.myUid(), requireActivity().getPackageName()
+        )
+        return if (mode == AppOpsManager.MODE_DEFAULT) {
+            requireActivity().checkCallingOrSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            mode == MODE_ALLOWED
+        }
 
     }
 
