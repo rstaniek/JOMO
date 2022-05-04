@@ -24,7 +24,7 @@ class DashboardFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
-    private val jomoTrigger: IJomoTrigger = DaltonizerService(requireActivity().contentResolver)
+    lateinit var jomoTrigger: IJomoTrigger
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -36,6 +36,8 @@ class DashboardFragment : Fragment() {
 
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
+
+        jomoTrigger = DaltonizerService(requireActivity().contentResolver)
 
         val switchControl: SwitchMaterial = binding.switch1
         switchControl.setOnClickListener {
