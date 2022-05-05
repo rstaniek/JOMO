@@ -80,10 +80,10 @@ class HomeFragment : Fragment() {
 
     private fun showUsageStats() {
         var usageStatsManager: UsageStatsManager =
-            activity?.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            requireActivity().getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
         var queryUsageStats: List<UsageStats> = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY,
-            System.currentTimeMillis() - 1000 * 3600 * 24 * HistoryInDays,
+            System.currentTimeMillis() - (1000 * 3600 * 24 * HistoryInDays),
             System.currentTimeMillis()
         )
         queryUsageStats = queryUsageStats.filter { it.totalTimeInForeground > 0 }

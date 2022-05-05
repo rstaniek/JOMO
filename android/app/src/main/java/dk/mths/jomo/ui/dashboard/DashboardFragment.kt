@@ -1,6 +1,5 @@
 package dk.mths.jomo.ui.dashboard
 
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -10,11 +9,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import dk.mths.jomo.databinding.FragmentDashboardBinding
 import dk.mths.jomo.service.BrightnessSettingsService
 import dk.mths.jomo.service.DaltonizerService
 import dk.mths.jomo.service.IJomoTrigger
+import dk.mths.jomo.work.BackgroundWorker
 
 
 class DashboardFragment : Fragment() {
@@ -27,6 +29,7 @@ class DashboardFragment : Fragment() {
 
     lateinit var MonoChromaticService: IJomoTrigger
     lateinit var BrightnessService : IJomoTrigger
+    lateinit var mWorkManager : WorkManager
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -34,7 +37,7 @@ class DashboardFragment : Fragment() {
             savedInstanceState: Bundle?
     ): View {
         val dashboardViewModel =
-                ViewModelProvider(this).get(DashboardViewModel::class.java)
+            ViewModelProvider(this).get(DashboardViewModel::class.java)
 
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
@@ -42,25 +45,32 @@ class DashboardFragment : Fragment() {
         changeWriteSettingsPermission()
         MonoChromaticService = DaltonizerService(requireContext().contentResolver)
         BrightnessService = BrightnessSettingsService(requireContext().contentResolver)
+        mWorkManager = WorkManager.getInstance(requireContext())
 
         val switchControl: SwitchMaterial = binding.switch1
-        val switchControl2: SwitchMaterial = binding.switch2
         switchControl.setOnClickListener {
-            if (switchControl.isChecked){
+            if (switchControl.isChecked) {
                 MonoChromaticService.enable()
             } else {
                 MonoChromaticService.disable()
             }
         }
 
+        val switchControl2: SwitchMaterial = binding.switch2
         switchControl2.setOnClickListener {
-            if (switchControl2.isChecked){
+            if (switchControl2.isChecked) {
                 BrightnessService.enable()
             } else {
                 BrightnessService.disable()
             }
         }
 
+        val switchControl3: SwitchMaterial = binding.switch3
+        switchControl3.setOnClickListener {
+            if (switchControl3.isChecked) {
+                mWorkManager.enqueue(OneTimeWorkRequest.from(BackgroundWorker::class.java))
+            }
+        }
         return root
     }
 
