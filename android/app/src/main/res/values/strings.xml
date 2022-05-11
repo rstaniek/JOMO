@@ -4,4 +4,7 @@
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
     <string name="switch_monochromatic_mode">Monochromatic mode</string>
+    <string name="switch_brightness_mode">Brightness mode</string>
+    <string name="permission_description">In order to allow this application to collect your apps usage information,
+        you need to allow "Package Usage Stats" permission from the Settings application.\nYou can cancel this permission anytime.</string>
 </resources>

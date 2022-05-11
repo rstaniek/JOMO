@@ -65,4 +65,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-firestore-ktx'
     implementation 'com.google.firebase:firebase-messaging-ktx'
 
+    // WorkManager dependency
+    def work_version = "2.7.1"
+    implementation("androidx.work:work-runtime-ktx:$work_version")
+
 }
