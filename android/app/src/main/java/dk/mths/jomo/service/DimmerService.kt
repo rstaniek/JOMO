@@ -3,9 +3,7 @@ package dk.mths.jomo.service
 import android.content.ContentResolver
 import android.provider.Settings
 
-
-
-open class BrightnessSettingsService(private var contentResolver: ContentResolver) : IJomoTrigger {
+open class DimmerService(private var contentResolver: ContentResolver) : IJomoTrigger {
 
     private var originalBrightness: Int = 0
     private var customBrightness: Int = 0
@@ -29,6 +27,9 @@ open class BrightnessSettingsService(private var contentResolver: ContentResolve
                 Settings.System.SCREEN_BRIGHTNESS,
                 0
             )
+            FireLog()
+                .withContext("brightnessSetting", "true")
+                .sendLog("dimmer")
         } catch (e: Settings.SettingNotFoundException) {
             FireLog().sendError(e)
         }
@@ -41,6 +42,9 @@ open class BrightnessSettingsService(private var contentResolver: ContentResolve
                 Settings.System.SCREEN_BRIGHTNESS,
                 originalBrightness
             )
+            FireLog()
+                .withContext("brightnessSetting", "false")
+                .sendLog("dimmer")
         } catch (e: Settings.SettingNotFoundException) {
             FireLog().sendError(e)
         }
