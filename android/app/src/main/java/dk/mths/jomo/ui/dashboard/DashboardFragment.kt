@@ -13,7 +13,7 @@ import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import dk.mths.jomo.databinding.FragmentDashboardBinding
-import dk.mths.jomo.service.BrightnessSettingsService
+import dk.mths.jomo.service.DimmerService
 import dk.mths.jomo.service.DaltonizerService
 import dk.mths.jomo.service.IJomoTrigger
 import dk.mths.jomo.work.BackgroundWorker
@@ -27,8 +27,8 @@ class DashboardFragment : Fragment() {
     // onDestroyView.
     private val binding get() = _binding!!
 
-    lateinit var MonoChromaticService: IJomoTrigger
-    lateinit var BrightnessService : IJomoTrigger
+    private lateinit var daltonizerService: IJomoTrigger
+    private lateinit var dimmerService : IJomoTrigger
     lateinit var mWorkManager : WorkManager
 
     override fun onCreateView(
@@ -43,25 +43,25 @@ class DashboardFragment : Fragment() {
         val root: View = binding.root
 
         changeWriteSettingsPermission()
-        MonoChromaticService = DaltonizerService(requireContext().contentResolver)
-        BrightnessService = BrightnessSettingsService(requireContext().contentResolver)
+        daltonizerService = DaltonizerService(requireContext().contentResolver)
+        dimmerService = DimmerService(requireContext().contentResolver)
         mWorkManager = WorkManager.getInstance(requireContext())
 
         val switchControl: SwitchMaterial = binding.switch1
         switchControl.setOnClickListener {
             if (switchControl.isChecked) {
-                MonoChromaticService.enable()
+                daltonizerService.enable()
             } else {
-                MonoChromaticService.disable()
+                daltonizerService.disable()
             }
         }
 
         val switchControl2: SwitchMaterial = binding.switch2
         switchControl2.setOnClickListener {
             if (switchControl2.isChecked) {
-                BrightnessService.enable()
+                dimmerService.enable()
             } else {
-                BrightnessService.disable()
+                dimmerService.disable()
             }
         }
 
