@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import dk.mths.jomo.R
 import dk.mths.jomo.databinding.FragmentHomeBinding
+import dk.mths.jomo.service.UsageStatsService
 import dk.mths.jomo.utils.App
 import dk.mths.jomo.utils.AppsAdapter
 import java.util.*
@@ -37,12 +38,13 @@ class HomeFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
-    private val HistoryInDays = 7
     lateinit var enableBtn: Button
     lateinit var showBtn: Button
     lateinit var permissionDescriptionTv: TextView
     lateinit var usageTv: TextView
     lateinit var appsList: ListView
+    lateinit var todayBtn: Button
+    lateinit var lastWeekBtn: Button
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,12 +62,12 @@ class HomeFragment : Fragment() {
         permissionDescriptionTv = binding.permissionDescriptionTv
         usageTv = binding.usageTv
         appsList = binding.appsList
-
-        usageTv.text = "Your Apps Usage For Last $HistoryInDays days"
+        todayBtn = binding.todayButton
+        lastWeekBtn = binding.lastWeekButton
 
         if (checkUsageStatsPermission()) {
             showHideWithPermission()
-            showBtn.setOnClickListener { view: View? -> showUsageStats() }
+            showBtn.setOnClickListener { view: View? -> showUsageStats(1) }
         } else {
             showHideNoPermission()
             enableBtn.setOnClickListener { view: View? ->
@@ -75,73 +77,15 @@ class HomeFragment : Fragment() {
             }
         }
 
+        todayBtn.setOnClickListener { view: View? -> showUsageStats(1) }
+        lastWeekBtn.setOnClickListener { view: View? -> showUsageStats(7) }
+
         return root
     }
 
-    private fun showUsageStats() {
-        var usageStatsManager: UsageStatsManager =
-            requireActivity().getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
-        var queryUsageStats: List<UsageStats> = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            System.currentTimeMillis() - (1000 * 3600 * 24 * HistoryInDays),
-            System.currentTimeMillis()
-        )
-        queryUsageStats = queryUsageStats.filter { it.totalTimeInForeground > 0 }
-
-        // Group the usageStats by application and sort them by total time in foreground
-        if (queryUsageStats.size > 0) {
-            val mySortedMap: MutableMap<String, UsageStats> = TreeMap()
-            for (usageStats in queryUsageStats) {
-                mySortedMap[usageStats.packageName] = usageStats
-            }
-            showAppsUsage(mySortedMap)
-        }
-    }
-
-    private fun showAppsUsage(mySortedMap: Map<String, UsageStats>) {
-        //public void showAppsUsage(List<UsageStats> usageStatsList) {
-        var appsList: ArrayList<App> = ArrayList()
-        var usageStatsList: List<UsageStats> = ArrayList(mySortedMap.values)
-
-        // sort the applications by time spent in foreground
-        var sortedList = usageStatsList.sortedByDescending{ it.totalTimeInForeground }
-
-        // get total time of apps usage to calculate the usagePercentage for each app
-        val totalTime = sortedList.stream().map { obj: UsageStats -> obj.totalTimeInForeground }
-            .mapToLong { obj: Long -> obj }.sum()
-
-        val longestAppRunTime = sortedList.maxOf{ it.totalTimeInForeground }
-
-        //fill the appsList
-        for (usageStats in sortedList) {
-            try {
-                val packageName = usageStats.packageName
-                var icon: Drawable? = getDrawable(requireActivity(), R.drawable.no_image)
-                val packageNames = packageName.split("\\.").toTypedArray()
-                var appName = packageNames[packageNames.size - 1].trim { it <= ' ' }
-
-                if (isAppInfoAvailable(usageStats)) {
-                    val ai: ApplicationInfo =
-                        requireActivity().getApplicationContext().getPackageManager()
-                            .getApplicationInfo(packageName, 0)
-                    icon = requireActivity().getApplicationContext().getPackageManager()
-                        .getApplicationIcon(ai)
-                    appName = requireActivity().getApplicationContext().getPackageManager()
-                        .getApplicationLabel(ai)
-                        .toString()
-                }
-
-                val usageDuration: String = getDurationBreakdown(usageStats.totalTimeInForeground)
-                val usagePercentage = (usageStats.totalTimeInForeground * 100 / totalTime).toInt()
-                val percentageOfLongestRunningApp = (usageStats.totalTimeInForeground * 100 / longestAppRunTime).toInt()
-
-                val usageStatDTO = App(icon, appName, usagePercentage, percentageOfLongestRunningApp, usageDuration)
-                appsList.add(usageStatDTO)
-            } catch (e: PackageManager.NameNotFoundException) {
-                e.printStackTrace();
-            }
-        }
-
+    private fun showUsageStats(historyInDays: Int) {
+        val usageService = UsageStatsService(requireContext())
+        val appsList = usageService.showUsageStats(historyInDays)
         // build the adapter
         val adapter = AppsAdapter(requireContext(), appsList)
 
@@ -149,41 +93,7 @@ class HomeFragment : Fragment() {
         val listView: ListView = binding.appsList
         listView.adapter = adapter
 
-        showHideItemsWhenShowApps()
-    }
-
-    /**
-     * check if the application info is still existing in the device / otherwise it's not possible to show app detail
-     * @return true if application info is available
-     */
-    private fun isAppInfoAvailable(usageStats: UsageStats): Boolean {
-        return try {
-            requireActivity().getApplicationContext().getPackageManager()
-                .getApplicationInfo(usageStats.packageName, 0)
-            true
-        } catch (e: PackageManager.NameNotFoundException) {
-            false
-        }
-    }
-
-    /**
-     * helper method to get string in format hh:mm:ss from miliseconds
-     *
-     * @param millis (application time in foreground)
-     * @return string in format hh:mm:ss from miliseconds
-     */
-    private fun getDurationBreakdown(millis: Long): String {
-        require(millis >= 0) { "Duration must be greater than zero!" }
-
-        var milliseconds = millis
-
-        var hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
-        milliseconds -= TimeUnit.HOURS.toMillis(hours)
-        var minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds)
-        milliseconds -= TimeUnit.MINUTES.toMillis(minutes)
-        var seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds)
-
-        return "$hours h $minutes m $seconds s"
+        showHideItemsWhenShowApps(historyInDays)
     }
 
     /**
@@ -193,6 +103,8 @@ class HomeFragment : Fragment() {
         enableBtn.visibility = View.VISIBLE
         permissionDescriptionTv.visibility = View.VISIBLE
         showBtn.visibility = View.GONE
+        todayBtn.visibility = View.GONE
+        lastWeekBtn.visibility = View.GONE
         usageTv.visibility = View.GONE
         appsList.visibility = View.GONE
     }
@@ -204,6 +116,8 @@ class HomeFragment : Fragment() {
         enableBtn.visibility = View.GONE
         permissionDescriptionTv.visibility = View.GONE
         showBtn.visibility = View.VISIBLE
+        todayBtn.visibility = View.GONE
+        lastWeekBtn.visibility = View.GONE
         usageTv.visibility = View.GONE
         appsList.visibility = View.GONE
     }
@@ -211,11 +125,14 @@ class HomeFragment : Fragment() {
     /**
      * helper method used to show/hide items in the view when showing the apps list
      */
-    private fun showHideItemsWhenShowApps() {
+    private fun showHideItemsWhenShowApps(days: Int) {
         enableBtn.visibility = View.GONE
         permissionDescriptionTv.visibility = View.GONE
         showBtn.visibility = View.GONE
+        todayBtn.visibility = View.VISIBLE
+        lastWeekBtn.visibility = View.VISIBLE
         usageTv.visibility = View.VISIBLE
+        usageTv.text = "Your app usage for the last $days days"
         appsList.visibility = View.VISIBLE
     }
 
