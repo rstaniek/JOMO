@@ -26,5 +26,3 @@ def custom():
         output = jsonify({"message": "..."})
 
     return output
-
-app.run(ssl_context=('/var/www/jomo-api.pem', '/var/www/jomo-api.key'))
