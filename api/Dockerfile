@@ -11,6 +11,6 @@ WORKDIR /app
 RUN useradd demo
 USER demo
 
-EXPOSE 443
+EXPOSE 8808
 
-ENTRYPOINT ["bash", "/app/bin/run.sh"]
+ENTRYPOINT ["bash", "/bin/run.sh"]
