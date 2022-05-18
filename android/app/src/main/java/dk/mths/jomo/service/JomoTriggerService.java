@@ -60,7 +60,8 @@ public class JomoTriggerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId){
         StatusNotificationHelper notificationHelper = new StatusNotificationHelper();
-        DaltonizerService service = new DaltonizerService(getContentResolver());
+        IJomoTrigger service = new DaltonizerService(getContentResolver());
+        //IJomoTrigger service = new DimmerService(getContentResolver());
 
         new Thread(
                 new Runnable(){
