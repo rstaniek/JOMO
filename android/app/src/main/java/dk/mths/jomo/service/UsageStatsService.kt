@@ -1,5 +1,6 @@
 package dk.mths.jomo.service
 
+import android.app.usage.UsageEvents
 import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
@@ -9,6 +10,7 @@ import android.graphics.drawable.Drawable
 import androidx.appcompat.content.res.AppCompatResources
 import dk.mths.jomo.R
 import dk.mths.jomo.utils.App
+import java.time.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -17,10 +19,19 @@ class UsageStatsService(context: Context) {
     private val mContext = context
     private val usageStatsManager = mContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
 
+
     fun showUsageStats(historyInDays: Int): ArrayList<App> {
+        val c: Calendar = Calendar.getInstance()
+        c.set(Calendar.HOUR_OF_DAY, 0)
+        c.set(Calendar.MINUTE, 0)
+        c.set(Calendar.SECOND, 0)
+        c.set(Calendar.MILLISECOND, 0)
+
+        val start = c.timeInMillis - (1000 * 3600 * 24 * historyInDays)
+        val end = System.currentTimeMillis()
         var queryUsageStats: Map<String, UsageStats> = usageStatsManager.queryAndAggregateUsageStats(
-            System.currentTimeMillis() - (1000 * 3600 * 24 * historyInDays),
-            System.currentTimeMillis()
+            start,
+            end
         )
         queryUsageStats = queryUsageStats.filter { it.value.totalTimeInForeground > 0 }
 
@@ -33,10 +44,12 @@ class UsageStatsService(context: Context) {
                     mySortedMap[usageStats.packageName] = usageStats
             }
         }
-        return showAppsUsage(mySortedMap)
+        val eventMap = getUsageEvents(start, end)
+
+        return showAppsUsage(mySortedMap, eventMap)
     }
 
-    private fun showAppsUsage(mySortedMap: Map<String, UsageStats>): ArrayList<App> {
+    private fun showAppsUsage(mySortedMap: Map<String, UsageStats>, eventMap: Map<String, Int>): ArrayList<App> {
         //public void showAppsUsage(List<UsageStats> usageStatsList) {
         var appsList: ArrayList<App> = ArrayList()
         var usageStatsList: List<UsageStats> = ArrayList(mySortedMap.values)
@@ -49,6 +62,7 @@ class UsageStatsService(context: Context) {
             .mapToLong { obj: Long -> obj }.sum()
 
         val longestAppRunTime = sortedList.maxOf { it.totalTimeInForeground }
+
 
         //fill the appsList
         for (usageStats in sortedList) {
@@ -74,13 +88,15 @@ class UsageStatsService(context: Context) {
                 val usagePercentage = (usageStats.totalTimeInForeground * 100 / totalTime).toInt()
                 val percentageOfLongestRunningApp =
                     (usageStats.totalTimeInForeground * 100 / longestAppRunTime).toInt()
+                val openCount: Int = eventMap.getOrDefault(packageName, 0)
 
                 val usageStatDTO = App(
                     icon,
                     appName,
                     usagePercentage,
                     percentageOfLongestRunningApp,
-                    usageDuration
+                    usageDuration,
+                    openCount
                 )
                 appsList.add(usageStatDTO)
             } catch (e: PackageManager.NameNotFoundException) {
@@ -89,6 +105,45 @@ class UsageStatsService(context: Context) {
         }
 
         return appsList
+    }
+
+    fun getUsageEvents(start: Long, end: Long): Map<String, Int> {
+        var eventMap: MutableMap<String, Int> = mutableMapOf()
+        val currentEvent: UsageEvents.Event = UsageEvents.Event()
+        val usageEvents = usageStatsManager.queryEvents(start, end)
+        val nonSystemApps = getNonSystemAppsList()
+        while (usageEvents.hasNextEvent()) {
+            usageEvents.getNextEvent(currentEvent)
+            if (currentEvent.getEventType() === UsageEvents.Event.ACTIVITY_RESUMED
+            ) {
+                val key: String = currentEvent.getPackageName()
+                if(key in nonSystemApps){
+                    if (eventMap.get(key) == null) {
+                        eventMap.put(key, 1)
+                    }
+                    eventMap.merge(key,1, Int::plus)
+                }
+            }
+        }
+
+        return eventMap
+    }
+
+    fun getUsageStatsForPackage(start: Long, end: Long, packageName: String): ArrayList<UsageEvents.Event>{
+        var eventList: ArrayList<UsageEvents.Event> = ArrayList()
+        val currentEvent: UsageEvents.Event = UsageEvents.Event()
+        val usageEvents = usageStatsManager.queryEvents(start, end)
+        val nonSystemApps = getNonSystemAppsList()
+        while (usageEvents.hasNextEvent()) {
+            usageEvents.getNextEvent(currentEvent)
+            if (currentEvent.getEventType() === UsageEvents.Event.ACTIVITY_RESUMED &&
+                        currentEvent.packageName == packageName &&
+                        currentEvent.packageName in nonSystemApps
+            ) {
+                eventList.add(currentEvent)
+            }
+        }
+        return eventList
     }
 
     /**
@@ -136,5 +191,52 @@ class UsageStatsService(context: Context) {
             }
         }
         return appInfoMap
+    }
+
+    fun getForegroundPackage(): String? {
+        var packageName: String? = null
+        val INTERVAL = (1000 * 60).toLong()
+        val end = System.currentTimeMillis()
+        val begin = end - INTERVAL
+        val usageEvents = usageStatsManager.queryEvents(begin, end)
+        while (usageEvents.hasNextEvent()) {
+            val event = UsageEvents.Event()
+            usageEvents.getNextEvent(event)
+            when (event.eventType) {
+                UsageEvents.Event.ACTIVITY_RESUMED -> packageName = event.packageName
+                UsageEvents.Event.ACTIVITY_PAUSED -> if (event.packageName == packageName) {
+                    packageName = null
+                }
+                UsageEvents.Event.ACTIVITY_STOPPED -> if (event.packageName == packageName) {
+                    packageName = null
+                }
+            }
+        }
+
+//        if(packageName != null){
+//            val ai: ApplicationInfo =
+//                mContext!!.getApplicationContext().getPackageManager()
+//                    .getApplicationInfo(packageName, 0)
+//            val appName = mContext!!.getApplicationContext().getPackageManager()
+//                .getApplicationLabel(ai)
+//                .toString()
+//            return appName
+//        }
+
+        return packageName
+    }
+
+    fun getForegroundPackagePretty(): String?{
+        val packageName = getForegroundPackage()
+        if(packageName != null){
+            val ai: ApplicationInfo =
+                mContext!!.getApplicationContext().getPackageManager()
+                    .getApplicationInfo(packageName, 0)
+            val appName = mContext!!.getApplicationContext().getPackageManager()
+                .getApplicationLabel(ai)
+                .toString()
+            return appName
+        }
+        return packageName
     }
 }

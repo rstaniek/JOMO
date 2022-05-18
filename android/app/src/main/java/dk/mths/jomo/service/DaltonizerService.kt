@@ -19,4 +19,15 @@ open class DaltonizerService(private var contentResolver: ContentResolver) : IJo
     private fun writeSetting(name: String, value: String){
         Settings.Secure.putString(contentResolver, name, value)
     }
+
+    fun IsEnabled(): Boolean{
+        if(getSetting("accessibility_display_daltonizer_enabled") == "1"){
+            return true
+        }
+        return false
+    }
+
+    private fun getSetting(name: String): String{
+        return Settings.Secure.getString(contentResolver, name)
+    }
 }

@@ -8,13 +8,15 @@ public class App {
     public  int usagePercentage;
     public int percentageOfLongestRunning;
     public  String usageDuration;
+    public int openCount;
 
 
-    public App(Drawable appIcon, String appName, int usagePercentage, int percentageOfLongestRunning, String usageDuration) {
+    public App(Drawable appIcon, String appName, int usagePercentage, int percentageOfLongestRunning, String usageDuration, int openCount) {
         this.appIcon = appIcon;
         this.appName = appName;
         this.usagePercentage = usagePercentage;
         this.percentageOfLongestRunning = percentageOfLongestRunning;
         this.usageDuration = usageDuration;
+        this.openCount = openCount;
     }
 }
