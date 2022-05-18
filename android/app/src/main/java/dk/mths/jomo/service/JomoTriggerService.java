@@ -4,18 +4,20 @@ import android.app.ActivityManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
-import android.app.usage.UsageEvents;
-import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
-import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 
+import com.google.common.collect.ImmutableList;
+
+import dk.mths.jomo.MainActivity;
 import dk.mths.jomo.R;
 import dk.mths.jomo.utils.RestartReceiver;
 import dk.mths.jomo.utils.StatusNotificationHelper;
@@ -24,6 +26,29 @@ public class JomoTriggerService extends Service {
 
     private UsageStatsService usageStatsService;
     private String CHANNEL_ID = "NOTIFICATION_CHANNEL";
+    private final int TRIGGER_THRESHOLD = 5;
+    private final int TRIGGER_TIME_RANGE_IN_MINS = 5;
+    private final int LOCKOUT_PERIOD_IN_MINS = 5;
+    private static final ImmutableList<String> BAD_APPS =
+            ImmutableList.of(
+                    "Facebook", "com.facebook.katana",
+                    "Instagram", "com.instagram.android",
+                    "YouTube", "com.google.android.youtube",
+                    "Messenger", "com.facebook.orca",
+                    "Twitter", "com.twitter.android",
+                    "LinkedIn", "com.linkedin.android",
+                    "Snapchat", "com.snapchat.android",
+                    "Tumblr", "com.tumblr",
+                    "Pinterest", "com.pinterest",
+                    "Reddit", "com.reddit.frontpage",
+                    "TikTok", "com.zhiliaoapp.musically",
+                    "Tinder", "com.tinder",
+                    "Bumble", "com.bumble.app",
+                    "happn", "com.ftw_and_co.happn",
+                    "Discord", "com.discord",
+                    "rif is fun", "com.andrewshu.android.reddit",
+                    "Twitch", "com.twitch.android.app"
+            );
 
     @Override
     public void onCreate() {
@@ -42,10 +67,20 @@ public class JomoTriggerService extends Service {
                     @Override
                     public void run(){
                         while(true){
-                           // if(usageStatsService.getUsageStatsForPackage(System.currentTimeMillis()-1000*60,System.currentTimeMillis(), getForegroundApp()).size() > 3){
-                            if(getForegroundAppName() == "Messenger"){
+                            String foregroundApp = getForegroundAppName();
+                            updateNotification("Foreground app: " + foregroundApp, getApplicationContext());
+                            int badAppCount = usageStatsService.getEventhistoryForBadApps(
+                                    System.currentTimeMillis()-1000*60* TRIGGER_TIME_RANGE_IN_MINS,
+                                    System.currentTimeMillis(),
+                                    BAD_APPS).size();
+                            if(BAD_APPS.contains(foregroundApp) && badAppCount >= TRIGGER_THRESHOLD){
                                 service.enable();
-                                notificationHelper.updateNotification("Overuse detected, grayscaling " + getForegroundAppName(), getApplicationContext());
+                                notificationHelper.updateNotification("Overuse detected, grayscaling " + foregroundApp, getApplicationContext());
+                                try {
+                                    Thread.sleep(1000*60 * LOCKOUT_PERIOD_IN_MINS);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
                             }
                             else{
                                 service.disable();
@@ -62,7 +97,16 @@ public class JomoTriggerService extends Service {
         ).start();
 
 
-        Notification notification = notificationHelper.makeJomoForegroundNotification("Jomo Service Running", this);
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,
+                0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Service is Running")
+                .setContentText("Jomo Service Initialized")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build();
 
         startForeground(1001, notification);
 
@@ -105,6 +149,23 @@ public class JomoTriggerService extends Service {
             NotificationManager manager = getSystemService(NotificationManager.class);
             manager.createNotificationChannel(serviceChannel);
         }
+    }
+
+    private void updateNotification(String message, Context context) {
+        NotificationManagerCompat nmc = NotificationManagerCompat.from(context);
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,
+                0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Service is Running")
+                .setContentText(message)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentIntent(pendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .build();
+
+        nmc.notify(1001, notification);
     }
 
     @Override

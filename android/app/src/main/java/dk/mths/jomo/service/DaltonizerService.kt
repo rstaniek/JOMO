@@ -20,7 +20,7 @@ open class DaltonizerService(private var contentResolver: ContentResolver) : IJo
         Settings.Secure.putString(contentResolver, name, value)
     }
 
-    fun IsEnabled(): Boolean{
+    override fun isEnabled(): Boolean{
         if(getSetting("accessibility_display_daltonizer_enabled") == "1"){
             return true
         }

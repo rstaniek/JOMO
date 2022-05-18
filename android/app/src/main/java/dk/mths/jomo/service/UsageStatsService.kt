@@ -8,9 +8,9 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import androidx.appcompat.content.res.AppCompatResources
+import com.google.common.collect.ImmutableList
 import dk.mths.jomo.R
 import dk.mths.jomo.utils.App
-import java.time.*
 import java.util.*
 import java.util.concurrent.TimeUnit
 
@@ -129,16 +129,14 @@ class UsageStatsService(context: Context) {
         return eventMap
     }
 
-    fun getUsageStatsForPackage(start: Long, end: Long, packageName: String): ArrayList<UsageEvents.Event>{
+    fun getEventhistoryForBadApps(start: Long, end: Long, packages: ImmutableList<String>): ArrayList<UsageEvents.Event>{
         var eventList: ArrayList<UsageEvents.Event> = ArrayList()
         val currentEvent: UsageEvents.Event = UsageEvents.Event()
         val usageEvents = usageStatsManager.queryEvents(start, end)
-        val nonSystemApps = getNonSystemAppsList()
         while (usageEvents.hasNextEvent()) {
             usageEvents.getNextEvent(currentEvent)
             if (currentEvent.getEventType() === UsageEvents.Event.ACTIVITY_RESUMED &&
-                        currentEvent.packageName == packageName &&
-                        currentEvent.packageName in nonSystemApps
+                        currentEvent.packageName in packages
             ) {
                 eventList.add(currentEvent)
             }
@@ -194,36 +192,22 @@ class UsageStatsService(context: Context) {
     }
 
     fun getForegroundPackage(): String? {
-        var packageName: String? = null
-        val INTERVAL = (1000 * 60).toLong()
-        val end = System.currentTimeMillis()
-        val begin = end - INTERVAL
-        val usageEvents = usageStatsManager.queryEvents(begin, end)
-        while (usageEvents.hasNextEvent()) {
-            val event = UsageEvents.Event()
-            usageEvents.getNextEvent(event)
-            when (event.eventType) {
-                UsageEvents.Event.ACTIVITY_RESUMED -> packageName = event.packageName
-                UsageEvents.Event.ACTIVITY_PAUSED -> if (event.packageName == packageName) {
-                    packageName = null
-                }
-                UsageEvents.Event.ACTIVITY_STOPPED -> if (event.packageName == packageName) {
-                    packageName = null
-                }
+        val time = System.currentTimeMillis()
+        val list = usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_DAILY,
+            time - 1000 * 1000, time
+        )
+        if (list != null && !list.isEmpty()) {
+            val map: SortedMap<Long, UsageStats> = TreeMap()
+            for (stats in list) {
+                map[stats.lastTimeUsed] = stats
+            }
+            if (!map.isEmpty()) {
+                return map[map.lastKey()]!!.packageName
             }
         }
 
-//        if(packageName != null){
-//            val ai: ApplicationInfo =
-//                mContext!!.getApplicationContext().getPackageManager()
-//                    .getApplicationInfo(packageName, 0)
-//            val appName = mContext!!.getApplicationContext().getPackageManager()
-//                .getApplicationLabel(ai)
-//                .toString()
-//            return appName
-//        }
-
-        return packageName
+        return null
     }
 
     fun getForegroundPackagePretty(): String?{

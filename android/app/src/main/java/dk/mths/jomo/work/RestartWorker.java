@@ -4,7 +4,6 @@ package dk.mths.jomo.work;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -15,7 +14,6 @@ import dk.mths.jomo.service.JomoTriggerService;
 
 public class RestartWorker extends Worker {
     private final Context context;
-    private final String TAG = "MyWorker";
     private final JomoTriggerService myService;
 
     public RestartWorker(

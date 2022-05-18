@@ -9,14 +9,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkManager
 import com.google.android.material.switchmaterial.SwitchMaterial
 import dk.mths.jomo.databinding.FragmentDashboardBinding
 import dk.mths.jomo.service.DimmerService
 import dk.mths.jomo.service.DaltonizerService
 import dk.mths.jomo.service.IJomoTrigger
-import dk.mths.jomo.work.BackgroundWorker
 
 
 class DashboardFragment : Fragment() {
@@ -48,6 +46,9 @@ class DashboardFragment : Fragment() {
         mWorkManager = WorkManager.getInstance(requireContext())
 
         val switchControl: SwitchMaterial = binding.switch1
+        if(daltonizerService.isEnabled())
+            switchControl.isChecked = true
+
         switchControl.setOnClickListener {
             if (switchControl.isChecked) {
                 daltonizerService.enable()
@@ -56,7 +57,11 @@ class DashboardFragment : Fragment() {
             }
         }
 
+
         val switchControl2: SwitchMaterial = binding.switch2
+        if(dimmerService.isEnabled())
+            switchControl2.isChecked = true
+
         switchControl2.setOnClickListener {
             if (switchControl2.isChecked) {
                 dimmerService.enable()
@@ -65,12 +70,6 @@ class DashboardFragment : Fragment() {
             }
         }
 
-        val switchControl3: SwitchMaterial = binding.switch3
-        switchControl3.setOnClickListener {
-            if (switchControl3.isChecked) {
-                mWorkManager.enqueue(OneTimeWorkRequest.from(BackgroundWorker::class.java))
-            }
-        }
         return root
     }
 

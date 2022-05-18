@@ -7,7 +7,6 @@ import android.content.Intent;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
-import dk.mths.jomo.service.JomoTriggerService;
 import dk.mths.jomo.work.RestartWorker;
 
 public class RestartReceiver  extends BroadcastReceiver {

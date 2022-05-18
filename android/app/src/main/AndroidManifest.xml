@@ -44,21 +44,28 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".service.JomoTriggerService"></service>
+        <service
+            android:name=".service.JomoTriggerService"
+            android:enabled="true"
+            android:exported="true">
+
+        </service>
+
         <receiver
-            android:name=".utils.MyBroadcastReceiver"
+            android:name=".utils.RestartServiceOnBootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>
         </receiver>
+
         <receiver
             android:name=".utils.RestartReceiver"
             android:enabled="true"
             android:exported="false">
-
         </receiver>
+
     </application>
 
 </manifest>

@@ -50,4 +50,13 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
         }
     }
 
+    override fun isEnabled(): Boolean{
+        if(Settings.System.getInt(
+                contentResolver,
+                Settings.System.SCREEN_BRIGHTNESS) != originalBrightness){
+            return true
+        }
+        return false
+    }
+
 }
