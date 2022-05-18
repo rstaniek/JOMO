@@ -37,16 +37,18 @@ public class AppsAdapter extends ArrayAdapter<App> {
         TextView usage_perc_tv = convertView.findViewById(R.id.usage_perc_tv);
         ImageView icon_img =  convertView.findViewById(R.id.icon_img);
         ProgressBar progressBar = convertView.findViewById(R.id.progressBar);
+        TextView averageDuration = convertView.findViewById(R.id.app_average_duration);
 
 
 
         // Populate the data into the template view using the data object
         app_name_tv.setText(usageStats.appName);
-        app_open_count.setText("Launch count: " + usageStats.openCount);
+        app_open_count.setText("Opened: " + usageStats.openCount);
         usage_duration_tv.setText(usageStats.usageDuration);
         usage_perc_tv.setText(usageStats.usagePercentage + "%");
         icon_img.setImageDrawable(usageStats.appIcon);
         progressBar.setProgress(usageStats.percentageOfLongestRunning);
+        averageDuration.setText("Avg: " + usageStats.averageDuration);
 
 
 

@@ -28,7 +28,7 @@ public class JomoTriggerService extends Service {
     private String CHANNEL_ID = "NOTIFICATION_CHANNEL";
     private final int TRIGGER_THRESHOLD = 5;
     private final int TRIGGER_TIME_RANGE_IN_MINS = 5;
-    private final int LOCKOUT_PERIOD_IN_MINS = 5;
+    private final int LOCKOUT_PERIOD_IN_MINS = 1;
     private static final ImmutableList<String> BAD_APPS =
             ImmutableList.of(
                     "Facebook", "com.facebook.katana",
@@ -68,21 +68,26 @@ public class JomoTriggerService extends Service {
                     public void run(){
                         while(true){
                             String foregroundApp = getForegroundAppName();
-                            updateNotification("Foreground app: " + foregroundApp, getApplicationContext());
+                            //updateNotification("Foreground app: " + foregroundApp, getApplicationContext());
                             int badAppCount = usageStatsService.getEventhistoryForBadApps(
-                                    System.currentTimeMillis()-1000*60* TRIGGER_TIME_RANGE_IN_MINS,
+                                    System.currentTimeMillis()- (1000*60*TRIGGER_TIME_RANGE_IN_MINS),
                                     System.currentTimeMillis(),
                                     BAD_APPS).size();
-                            if(BAD_APPS.contains(foregroundApp) && badAppCount >= TRIGGER_THRESHOLD){
+
+                            if(BAD_APPS.contains(foregroundApp) && badAppCount > TRIGGER_THRESHOLD){
                                 service.enable();
-                                notificationHelper.updateNotification("Overuse detected, grayscaling " + foregroundApp, getApplicationContext());
+                                notificationHelper.updateNotification("Overuse detected, grayscaling for " + LOCKOUT_PERIOD_IN_MINS + " minutes ", getApplicationContext());
                                 try {
-                                    Thread.sleep(1000*60 * LOCKOUT_PERIOD_IN_MINS);
+                                    Thread.sleep(1000*60*LOCKOUT_PERIOD_IN_MINS);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
                             }
                             else{
+                                Integer remainingContextSwitches = TRIGGER_THRESHOLD-badAppCount;
+                                if(remainingContextSwitches < 0)
+                                    remainingContextSwitches = 0;
+                                updateNotification(remainingContextSwitches + " context switches remaining", getApplicationContext());
                                 service.disable();
                             }
 
@@ -101,8 +106,8 @@ public class JomoTriggerService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
                 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Service is Running")
-                .setContentText("Jomo Service Initialized")
+                .setContentTitle("JoMo")
+                .setContentText("Service Initialized")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -158,7 +163,7 @@ public class JomoTriggerService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
                 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Service is Running")
+                .setContentTitle("JoMo")
                 .setContentText(message)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
