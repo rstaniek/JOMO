@@ -89,6 +89,9 @@ class UsageStatsService(context: Context) {
                 val percentageOfLongestRunningApp =
                     (usageStats.totalTimeInForeground * 100 / longestAppRunTime).toInt()
                 val openCount: Int = eventMap.getOrDefault(packageName, 0)
+                var averageDuration: String = "0"
+                if(openCount != 0)
+                  averageDuration = getDurationBreakdown(usageStats.totalTimeInForeground / openCount.toLong())
 
                 val usageStatDTO = App(
                     icon,
@@ -96,7 +99,8 @@ class UsageStatsService(context: Context) {
                     usagePercentage,
                     percentageOfLongestRunningApp,
                     usageDuration,
-                    openCount
+                    openCount,
+                    averageDuration
                 )
                 appsList.add(usageStatDTO)
             } catch (e: PackageManager.NameNotFoundException) {

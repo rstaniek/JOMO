@@ -26,10 +26,12 @@ public class JomoTriggerService extends Service {
 
     private UsageStatsService usageStatsService;
     private String CHANNEL_ID = "NOTIFICATION_CHANNEL";
-    private final int TRIGGER_THRESHOLD = 5;
-    private final int TRIGGER_TIME_RANGE_IN_MINS = 5;
-    private final int LOCKOUT_PERIOD_IN_MINS = 5;
-    private static final ImmutableList<String> BAD_APPS =
+    private final int TRIGGER_THRESHOLD = 2;
+    private final int TRIGGER_TIME_RANGE_IN_MINS = 10;
+    private final int LOCKOUT_PERIOD_IN_MINS = 10;
+    private final int SLEEP_PERIOD_IN_SECONDS = 5;
+    private long lastLockoutInMillis;
+    private final ImmutableList<String> BAD_APPS =
             ImmutableList.of(
                     "Facebook", "com.facebook.katana",
                     "Instagram", "com.instagram.android",
@@ -58,39 +60,42 @@ public class JomoTriggerService extends Service {
     }
 
     @Override
-    public int onStartCommand(Intent intent, int flags, int startId){
+    public int onStartCommand(Intent intent, int flags, int startId) {
         StatusNotificationHelper notificationHelper = new StatusNotificationHelper();
-        DaltonizerService service = new DaltonizerService(getContentResolver());
+        IJomoTrigger service = new DaltonizerService(getContentResolver());
+        //IJomoTrigger service = new DimmerService(getContentResolver());
+
+        lastLockoutInMillis = 0L;
 
         new Thread(
-                new Runnable(){
+                new Runnable() {
                     @Override
-                    public void run(){
-                        while(true){
-                            String foregroundApp = getForegroundAppName();
-                            updateNotification("Foreground app: " + foregroundApp, getApplicationContext());
-                            int badAppCount = usageStatsService.getEventhistoryForBadApps(
-                                    System.currentTimeMillis()-1000*60* TRIGGER_TIME_RANGE_IN_MINS,
-                                    System.currentTimeMillis(),
-                                    BAD_APPS).size();
-                            if(BAD_APPS.contains(foregroundApp) && badAppCount >= TRIGGER_THRESHOLD){
-                                service.enable();
-                                notificationHelper.updateNotification("Overuse detected, grayscaling " + foregroundApp, getApplicationContext());
-                                try {
-                                    Thread.sleep(1000*60 * LOCKOUT_PERIOD_IN_MINS);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            else{
-                                service.disable();
-                            }
+                    public void run() {
+                        while (true) {
+                            if (lastLockoutInMillis + (1000 * 60 * LOCKOUT_PERIOD_IN_MINS) <= System.currentTimeMillis()) {
+                                String foregroundApp = getForegroundAppName();
+                                int badAppCount = usageStatsService.getEventhistoryForBadApps(
+                                        System.currentTimeMillis() - (1000 * 60 * TRIGGER_TIME_RANGE_IN_MINS),
+                                        System.currentTimeMillis(),
+                                        BAD_APPS).size();
 
+                                if (BAD_APPS.contains(foregroundApp) && badAppCount > TRIGGER_THRESHOLD) {
+                                    service.enable();
+                                    notificationHelper.updateNotification("Overuse detected, disrupting for " + LOCKOUT_PERIOD_IN_MINS + " minutes ", getApplicationContext());
+                                    lastLockoutInMillis = System.currentTimeMillis();
+                                } else {
+                                    updateNotification("Running", getApplicationContext());
+                                    service.disable();
+                                }
+
+                            }
+                            //else {
                             try {
-                                Thread.sleep(5000);
+                                Thread.sleep(1000 * SLEEP_PERIOD_IN_SECONDS);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
+                            //  }
                         }
                     }
                 }
@@ -101,8 +106,8 @@ public class JomoTriggerService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
                 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Service is Running")
-                .setContentText("Jomo Service Initialized")
+                .setContentTitle("JoMo")
+                .setContentText("Service Initialised")
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -113,18 +118,17 @@ public class JomoTriggerService extends Service {
         return START_STICKY;
     }
 
-
-    public String getForegroundApp(){
+    public String getForegroundApp() {
         return usageStatsService.getForegroundPackage();
     }
 
-    public String getForegroundAppName(){
+    public String getForegroundAppName() {
         return usageStatsService.getForegroundPackagePretty();
     }
 
-    public boolean foregroundServiceRunning(Context context){
+    public boolean foregroundServiceRunning(Context context) {
         ActivityManager activityManager = (ActivityManager) getSystemService(context.ACTIVITY_SERVICE);
-        for(ActivityManager.RunningServiceInfo service: activityManager.getRunningServices(Integer.MAX_VALUE)){
+        for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
             if (JomoTriggerService.class.getName().equals(service.service.getClassName())) {
                 return true;
             }
@@ -158,7 +162,7 @@ public class JomoTriggerService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
                 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Service is Running")
+                .setContentTitle("JoMo")
                 .setContentText(message)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentIntent(pendingIntent)
