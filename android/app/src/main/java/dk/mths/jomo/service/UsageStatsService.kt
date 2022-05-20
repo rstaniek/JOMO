@@ -133,17 +133,17 @@ class UsageStatsService(context: Context) {
         return eventMap
     }
 
-    fun getEventhistoryForBadApps(start: Long, end: Long, packages: ImmutableList<String>): ArrayList<UsageEvents.Event>{
-        var eventList: ArrayList<UsageEvents.Event> = ArrayList()
+    fun getEventhistoryForBadApps(start: Long, end: Long, packages: ImmutableList<String>): ArrayList<String>{
+        var eventList: ArrayList<String> = ArrayList()
         val currentEvent: UsageEvents.Event = UsageEvents.Event()
         val usageEvents = usageStatsManager.queryEvents(start, end)
         while (usageEvents.hasNextEvent()) {
             usageEvents.getNextEvent(currentEvent)
             if (currentEvent.getEventType() === UsageEvents.Event.ACTIVITY_RESUMED &&
                         currentEvent.packageName in packages &&
-                        eventList.any {it.packageName != currentEvent.packageName }
+                        currentEvent.packageName !in eventList
             ) {
-                eventList.add(currentEvent)
+                eventList.add(currentEvent.packageName)
             }
         }
         return eventList
