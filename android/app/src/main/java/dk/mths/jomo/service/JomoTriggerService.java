@@ -67,39 +67,47 @@ public class JomoTriggerService extends Service {
 
         lastLockoutInMillis = 0L;
 
-        new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        while (true) {
-                            if (lastLockoutInMillis + (1000 * 60 * LOCKOUT_PERIOD_IN_MINS) <= System.currentTimeMillis()) {
-                                String foregroundApp = getForegroundAppName();
-                                int badAppCount = usageStatsService.getEventhistoryForBadApps(
-                                        System.currentTimeMillis() - (1000 * 60 * TRIGGER_TIME_RANGE_IN_MINS),
-                                        System.currentTimeMillis(),
-                                        BAD_APPS).size();
+        new Thread(() -> {
+            String lastLoggedPackageName = "";
+            while (true) {
+                if (lastLockoutInMillis + (1000 * 60 * LOCKOUT_PERIOD_IN_MINS) <= System.currentTimeMillis()) {
+                    String foregroundApp = getForegroundAppName();
+                    int badAppCount = usageStatsService.getEventhistoryForBadApps(
+                            System.currentTimeMillis() - (1000 * 60 * TRIGGER_TIME_RANGE_IN_MINS),
+                            System.currentTimeMillis(),
+                            BAD_APPS).size();
 
-                                if (BAD_APPS.contains(foregroundApp) && badAppCount > TRIGGER_THRESHOLD) {
-                                    service.enable();
-                                    notificationHelper.updateNotification("Overuse detected, disrupting for " + LOCKOUT_PERIOD_IN_MINS + " minutes ", getApplicationContext());
-                                    lastLockoutInMillis = System.currentTimeMillis();
-                                } else {
-                                    updateNotification("Running", getApplicationContext());
-                                    if (service.isEnabled())
-                                        service.disable();
-                                }
+                    boolean isAppThreshold = badAppCount > TRIGGER_THRESHOLD;
 
-                            }
-
-                            try {
-                                Thread.sleep(1000 * SLEEP_PERIOD_IN_SECONDS);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                    if (BAD_APPS.contains(foregroundApp)) {
+                        if(!lastLoggedPackageName.equals(foregroundApp)) {
+                            new FireLog()
+                                    .withContext(FireLog.REASON, foregroundApp)
+                                    .withContext("badAppCount", badAppCount)
+                                    .withContext("trigger", Boolean.toString(isAppThreshold))
+                                    .sendLog("AlgoTrigger");
                         }
+                        lastLoggedPackageName = foregroundApp;
+                        if(isAppThreshold && !service.isEnabled()){
+                            service.enable(foregroundApp);
+                            notificationHelper.updateNotification("Overuse detected, disrupting for " + LOCKOUT_PERIOD_IN_MINS + " minutes ", getApplicationContext());
+                            lastLockoutInMillis = System.currentTimeMillis();
+                        }
+                    } else {
+                        updateNotification("Running", getApplicationContext());
+                        if (service.isEnabled())
+                            service.disable();
                     }
+
                 }
-        ).start();
+
+                try {
+                    Thread.sleep(1000 * SLEEP_PERIOD_IN_SECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
 
 
         Intent notificationIntent = new Intent(this, MainActivity.class);

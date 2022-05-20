@@ -1,7 +1,7 @@
 package dk.mths.jomo.service
 
 interface IJomoTrigger {
-    fun enable()
+    fun enable(packageName: String)
     fun disable()
     fun isEnabled(): Boolean
 }
