@@ -7,6 +7,7 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
 
     private var originalBrightness: Int = 0
     private var customBrightness: Int = 0
+    private var isEnabled: Boolean = false
 
     init {
         originalBrightness = Settings.System.getInt(
@@ -27,6 +28,7 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
                 Settings.System.SCREEN_BRIGHTNESS,
                 0
             )
+            isEnabled = true
             FireLog()
                 .withContext("brightnessSetting", "true")
                 .sendLog("dimmer")
@@ -42,6 +44,7 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
                 Settings.System.SCREEN_BRIGHTNESS,
                 originalBrightness
             )
+            isEnabled = false
             FireLog()
                 .withContext("brightnessSetting", "false")
                 .sendLog("dimmer")
@@ -51,12 +54,7 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
     }
 
     override fun isEnabled(): Boolean{
-        if(Settings.System.getInt(
-                contentResolver,
-                Settings.System.SCREEN_BRIGHTNESS) != originalBrightness){
-            return true
-        }
-        return false
+        return isEnabled
     }
 
 }

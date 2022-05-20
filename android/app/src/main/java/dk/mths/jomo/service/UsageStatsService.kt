@@ -140,7 +140,8 @@ class UsageStatsService(context: Context) {
         while (usageEvents.hasNextEvent()) {
             usageEvents.getNextEvent(currentEvent)
             if (currentEvent.getEventType() === UsageEvents.Event.ACTIVITY_RESUMED &&
-                        currentEvent.packageName in packages
+                        currentEvent.packageName in packages &&
+                        eventList.any {it.packageName != currentEvent.packageName }
             ) {
                 eventList.add(currentEvent)
             }

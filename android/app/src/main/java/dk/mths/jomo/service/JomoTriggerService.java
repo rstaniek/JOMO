@@ -85,17 +85,17 @@ public class JomoTriggerService extends Service {
                                     lastLockoutInMillis = System.currentTimeMillis();
                                 } else {
                                     updateNotification("Running", getApplicationContext());
-                                    service.disable();
+                                    if (service.isEnabled())
+                                        service.disable();
                                 }
 
                             }
-                            //else {
+
                             try {
                                 Thread.sleep(1000 * SLEEP_PERIOD_IN_SECONDS);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
-                            //  }
                         }
                     }
                 }
