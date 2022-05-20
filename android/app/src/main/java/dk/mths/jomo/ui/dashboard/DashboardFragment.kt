@@ -14,6 +14,7 @@ import com.google.android.material.switchmaterial.SwitchMaterial
 import dk.mths.jomo.databinding.FragmentDashboardBinding
 import dk.mths.jomo.service.DimmerService
 import dk.mths.jomo.service.DaltonizerService
+import dk.mths.jomo.service.FireLog
 import dk.mths.jomo.service.IJomoTrigger
 
 
@@ -51,7 +52,7 @@ class DashboardFragment : Fragment() {
 
         switchControl.setOnClickListener {
             if (switchControl.isChecked) {
-                daltonizerService.enable()
+                daltonizerService.enable(FireLog.JOMO)
             } else {
                 daltonizerService.disable()
             }
@@ -64,7 +65,7 @@ class DashboardFragment : Fragment() {
 
         switchControl2.setOnClickListener {
             if (switchControl2.isChecked) {
-                dimmerService.enable()
+                dimmerService.enable(FireLog.JOMO)
             } else {
                 dimmerService.disable()
             }

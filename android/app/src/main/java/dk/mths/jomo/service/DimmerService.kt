@@ -9,6 +9,8 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
     private var customBrightness: Int = 0
     private var isEnabled: Boolean = false
 
+    private val serviceTag = "dimmer"
+
     init {
         originalBrightness = Settings.System.getInt(
             contentResolver,
@@ -21,7 +23,7 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
         )
     }
 
-    override fun enable() {
+    override fun enable(packageName: String) {
         try {
             Settings.System.putInt(
                 contentResolver,
@@ -30,8 +32,9 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
             )
             isEnabled = true
             FireLog()
-                .withContext("brightnessSetting", "true")
-                .sendLog("dimmer")
+                .withContext(FireLog.SETTING, FireLog.ENABLED)
+                .withContext(FireLog.REASON, packageName)
+                .sendLog(serviceTag)
         } catch (e: Settings.SettingNotFoundException) {
             FireLog().sendError(e)
         }
@@ -46,8 +49,8 @@ open class DimmerService(private var contentResolver: ContentResolver) : IJomoTr
             )
             isEnabled = false
             FireLog()
-                .withContext("brightnessSetting", "false")
-                .sendLog("dimmer")
+                .withContext(FireLog.SETTING, FireLog.DISABLED)
+                .sendLog(serviceTag)
         } catch (e: Settings.SettingNotFoundException) {
             FireLog().sendError(e)
         }
