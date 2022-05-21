@@ -11,6 +11,15 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAccessor
 
 open class FireLog {
+    companion object {
+        const val SETTING = "setting"
+        const val REASON = "reason"
+        const val ENABLED = "enabled"
+        const val DISABLED = "disabled"
+        const val MESSAGE = "message"
+        const val JOMO = "JOMO"
+    }
+
     private val userIdKey = "uid"
     private val timestampKey = "timestamp"
     private val firebaseLogTag = "FirebaseLog"

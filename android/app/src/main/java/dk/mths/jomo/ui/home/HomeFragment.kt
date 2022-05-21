@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import dk.mths.jomo.R
 import dk.mths.jomo.databinding.FragmentHomeBinding
+import dk.mths.jomo.service.FireLog
 import dk.mths.jomo.service.UsageStatsService
 import dk.mths.jomo.utils.App
 import dk.mths.jomo.utils.AppsAdapter
@@ -77,8 +78,20 @@ class HomeFragment : Fragment() {
             }
         }
 
-        todayBtn.setOnClickListener { view: View? -> showUsageStats(1) }
-        lastWeekBtn.setOnClickListener { view: View? -> showUsageStats(7) }
+        todayBtn.setOnClickListener { view: View? ->
+            showUsageStats(1)
+            FireLog()
+                .withContext("historyInDays", 1)
+                .withContext(FireLog.MESSAGE, "App usage statistics view was triggered")
+                .sendLog(FireLog.JOMO)
+        }
+        lastWeekBtn.setOnClickListener { view: View? ->
+            showUsageStats(7)
+            FireLog()
+                .withContext("historyInDays", 7)
+                .withContext(FireLog.MESSAGE, "App usage statistics view was triggered")
+                .sendLog(FireLog.JOMO)
+        }
 
         return root
     }
