@@ -41,35 +41,35 @@ class DashboardFragment : Fragment() {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        changeWriteSettingsPermission()
-        daltonizerService = DaltonizerService(requireContext().contentResolver)
-        dimmerService = DimmerService(requireContext().contentResolver)
-        mWorkManager = WorkManager.getInstance(requireContext())
-
-        val switchControl: SwitchMaterial = binding.switch1
-        if(daltonizerService.isEnabled())
-            switchControl.isChecked = true
-
-        switchControl.setOnClickListener {
-            if (switchControl.isChecked) {
-                daltonizerService.enable(FireLog.JOMO)
-            } else {
-                daltonizerService.disable()
-            }
-        }
-
-
-        val switchControl2: SwitchMaterial = binding.switch2
-        if(dimmerService.isEnabled())
-            switchControl2.isChecked = true
-
-        switchControl2.setOnClickListener {
-            if (switchControl2.isChecked) {
-                dimmerService.enable(FireLog.JOMO)
-            } else {
-                dimmerService.disable()
-            }
-        }
+//        changeWriteSettingsPermission()
+//        daltonizerService = DaltonizerService(requireContext().contentResolver)
+//        dimmerService = DimmerService(requireContext().contentResolver)
+//        mWorkManager = WorkManager.getInstance(requireContext())
+//
+//        val switchControl: SwitchMaterial = binding.switch1
+//        if(daltonizerService.isEnabled())
+//            switchControl.isChecked = true
+//
+//        switchControl.setOnClickListener {
+//            if (switchControl.isChecked) {
+//                daltonizerService.enable(FireLog.JOMO)
+//            } else {
+//                daltonizerService.disable()
+//            }
+//        }
+//
+//
+//        val switchControl2: SwitchMaterial = binding.switch2
+//        if(dimmerService.isEnabled())
+//            switchControl2.isChecked = true
+//
+//        switchControl2.setOnClickListener {
+//            if (switchControl2.isChecked) {
+//                dimmerService.enable(FireLog.JOMO)
+//            } else {
+//                dimmerService.disable()
+//            }
+//        }
 
         return root
     }
